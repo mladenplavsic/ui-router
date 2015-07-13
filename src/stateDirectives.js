@@ -119,7 +119,7 @@ function $StateRefDirective($state, $timeout) {
         attrs.$set(attr, newHref);
 
         if (options.instance && !options.instance.current_instance) {
-            attrs.$set('target', '_blank');
+            attrs.$set('target', '_self');
         }
       };
 
