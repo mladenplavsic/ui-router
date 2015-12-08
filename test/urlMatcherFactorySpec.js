@@ -149,6 +149,14 @@ describe("UrlMatcher", function () {
           params = { id: 'bob', section: 'contact-details' };
       expect(m.format(params)).toEqual('/users/bob#contact-details');
     });
+
+    it("should trim trailing slashes when the terminal value is optional", function () {
+      var config = { params: { id: { squash: true, value: '123' } } },
+          m = new UrlMatcher('/users/:id', config),
+          params = { id: '123' };
+
+      expect(m.format(params)).toEqual('/users');
+    });
   });
 
   describe(".concat()", function() {
@@ -512,6 +520,33 @@ describe("urlMatcherFactory", function () {
       expect(m.format({ foo: 5, flag: true })).toBe("/5/1");
     });
 
+    it("should match built-in types with spaces", function () {
+      var m = new UrlMatcher("/{foo: int}/{flag:  bool}");
+      expect(m.exec("/1138/1")).toEqual({ foo: 1138, flag: true });
+      expect(m.format({ foo: 5, flag: true })).toBe("/5/1");
+    });
+
+    it("should match types named only in params", function () {
+      var m = new UrlMatcher("/{foo}/{flag}", {
+        params: {
+          foo: { type: 'int'},
+          flag: { type: 'bool'}
+        }
+      });
+      expect(m.exec("/1138/1")).toEqual({foo: 1138, flag: true});
+      expect(m.format({foo: 5, flag: true})).toBe("/5/1");
+    });
+
+    it("should throw an error if a param type is declared twice", function () {
+      expect(function() {
+        new UrlMatcher("/{foo:int}", {
+          params: {
+            foo: {type: 'int'}
+          }
+        });
+      }).toThrow("Param 'foo' has two type configurations.");
+    });
+
     it("should encode/decode dates", function () {
       var m = new UrlMatcher("/calendar/{date:date}"),
           result = m.exec("/calendar/2014-03-26");
@@ -588,6 +623,7 @@ describe("urlMatcherFactory", function () {
         params: { id: { value: null, squash: true } }
       });
       expect(m.exec('/users/1138')).toEqual({ id: 1138 });
+      expect(m.exec('/users1138')).toBeNull();
       expect(m.exec('/users/').id).toBeNull();
       expect(m.exec('/users').id).toBeNull();
     });
@@ -622,8 +658,8 @@ describe("urlMatcherFactory", function () {
         params: { id: { value: null, squash: true }, state: { value: null, squash: true } }
       });
 
-      expect(m.format()).toBe("/users/");
-      expect(m.format({ id: 1138 })).toBe("/users/1138/");
+      expect(m.format()).toBe("/users");
+      expect(m.format({ id: 1138 })).toBe("/users/1138");
       expect(m.format({ state: "NY" })).toBe("/users/NY");
       expect(m.format({ id: 1138, state: "NY" })).toBe("/users/1138/NY");
     });
